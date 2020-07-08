@@ -13,3 +13,4 @@ if test "${COMMAND}" = ""; then
 fi
 
 git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}"
+git test-results "${COMMITS}"
