@@ -16,6 +16,8 @@ note() {
   git notes add --force --message="${1}" "${COMMIT}"
 }
 
+note RUNNING
+
 echo "${COMMIT} ${COMMAND}"
 DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
 git worktree add --detach "${DIR}" "${COMMIT}"
