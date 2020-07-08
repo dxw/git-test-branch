@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+COMMIT=${1}
+COMMAND=${2}
+
+if test "${COMMIT}" = ""; then
+  echo "Usage: git test-commit @ 'command-to-run'"
+fi
+
+if test "${COMMAND}" = ""; then
+  echo "Usage: git test-commit @ 'command-to-run'"
+fi
+
+echo "${COMMIT} ${COMMAND}"
+DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
+git worktree add --detach "${DIR}" "${COMMIT}"
+
+if sh -c "cd ${DIR} && ${COMMAND}"; then
+  git notes add --force --message=PASS "${COMMIT}"
+else
+  git notes add --force --message=FAIL "${COMMIT}"
+fi
+
+git worktree remove "${DIR}"

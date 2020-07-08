@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+COMMITS=${1}
+COMMAND=${2}
+
+if test "${COMMITS}" = ""; then
+  echo "Usage: git test-branch origin/HEAD..@ 'command-to-run'"
+fi
+
+if test "${COMMAND}" = ""; then
+  echo "Usage: git test-branch origin/HEAD..@ 'command-to-run'"
+fi
+
+git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}"
