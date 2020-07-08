@@ -12,14 +12,18 @@ if test "${COMMAND}" = ""; then
   echo "Usage: git test-commit @ 'command-to-run'"
 fi
 
+note() {
+  git notes add --force --message="${1}" "${COMMIT}"
+}
+
 echo "${COMMIT} ${COMMAND}"
 DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
 git worktree add --detach "${DIR}" "${COMMIT}"
 
 if sh -c "cd ${DIR} && ${COMMAND}"; then
-  git notes add --force --message=PASS "${COMMIT}"
+  note PASS
 else
-  git notes add --force --message=FAIL "${COMMIT}"
+  note FAIL
 fi
 
 git worktree remove "${DIR}"
