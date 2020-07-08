@@ -12,5 +12,5 @@ if test "${COMMAND}" = ""; then
   echo "Usage: git test-branch origin/HEAD..@ 'command-to-run'"
 fi
 
-git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}"
+git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}" >/dev/null 2>&1
 git test-results "${COMMITS}"
