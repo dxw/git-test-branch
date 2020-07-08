@@ -16,6 +16,11 @@ note() {
   git notes --ref=refs/notes/dxw-git-test-commit add --force --message="${1}" "${COMMIT}"
 }
 
+if git notes --ref=refs/notes/dxw-git-test-commit show "${COMMIT}" 2>/dev/null; then
+  echo "There's already a test result for this commit. Will not re-run."
+  exit
+fi
+
 note RUNNING
 
 echo "${COMMIT} ${COMMAND}"
