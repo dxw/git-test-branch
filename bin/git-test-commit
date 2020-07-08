@@ -20,7 +20,8 @@ note RUNNING
 
 echo "${COMMIT} ${COMMAND}"
 DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
-git worktree add --detach "${DIR}" "${COMMIT}"
+
+git worktree add --force --detach "${DIR}" "${COMMIT}"
 
 if sh -c "cd ${DIR} && ${COMMAND}"; then
   note PASS
