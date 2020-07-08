@@ -13,7 +13,7 @@ if test "${COMMAND}" = ""; then
 fi
 
 note() {
-  git notes add --force --message="${1}" "${COMMIT}"
+  git notes --ref=refs/notes/dxw-git-test-commit add --force --message="${1}" "${COMMIT}"
 }
 
 note RUNNING
