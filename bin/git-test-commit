@@ -6,10 +6,12 @@ COMMAND=${2}
 
 if test "${COMMIT}" = ""; then
   echo "Usage: git test-commit @ 'command-to-run'"
+  exit 1
 fi
 
 if test "${COMMAND}" = ""; then
   echo "Usage: git test-commit @ 'command-to-run'"
+  exit 1
 fi
 
 note() {

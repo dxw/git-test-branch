@@ -6,10 +6,12 @@ COMMAND=${2}
 
 if test "${COMMITS}" = ""; then
   echo "Usage: git test-branch origin/HEAD..@ 'command-to-run'"
+  exit 1
 fi
 
 if test "${COMMAND}" = ""; then
   echo "Usage: git test-branch origin/HEAD..@ 'command-to-run'"
+  exit 1
 fi
 
 git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}" >/dev/null 2>&1
