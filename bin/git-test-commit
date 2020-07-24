@@ -28,6 +28,7 @@ note RUNNING
 echo "${COMMIT} ${COMMAND}"
 DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
 
+rm -rf "${DIR}"
 git worktree add --force --detach "${DIR}" "${COMMIT}"
 
 if sh -c "cd ${DIR} && ${COMMAND}"; then
