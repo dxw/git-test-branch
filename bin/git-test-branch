@@ -14,5 +14,5 @@ if test "${COMMAND}" = ""; then
   exit 1
 fi
 
-git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}" >/dev/null 2>&1
+git rev-list "${COMMITS}" | xargs --max-procs=5 -I {} git test-commit {} "${COMMAND}"
 git test-results "${COMMITS}"
