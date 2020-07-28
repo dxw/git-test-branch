@@ -39,4 +39,4 @@ else
   note FAIL
 fi
 
-git worktree remove "${DIR}"
+git worktree remove --force "${DIR}"
