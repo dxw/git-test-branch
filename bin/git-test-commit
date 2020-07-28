@@ -14,8 +14,10 @@ if test "${COMMAND}" = ""; then
   exit 1
 fi
 
+ROOT="$(git rev-parse --show-toplevel)/.git-test-commit"
+
 run_exclusively() {
-  flock "$(git rev-parse --show-toplevel)/.git-test-commit/lock" "${@}"
+  flock "${ROOT}/lock" "${@}"
 }
 
 note() {
@@ -25,7 +27,7 @@ note() {
 note RUNNING
 
 echo "${COMMIT} ${COMMAND}"
-DIR=$(git rev-parse --show-toplevel)/.git-test-commit/${COMMIT}
+DIR="${ROOT}/${COMMIT}"
 
 rm -rf "${DIR}"
 run_exclusively git worktree add --force --detach "${DIR}" "${COMMIT}"
