@@ -14,7 +14,8 @@ if test "${COMMAND}" = ""; then
   exit 1
 fi
 
-ROOT="$(git rev-parse --show-toplevel)/.git-test-commit"
+ROOT="$(git rev-parse --absolute-git-dir)/dxw-git-test-commit"
+mkdir -p "${ROOT}"
 
 run_exclusively() {
   flock "${ROOT}/lock" "${@}"
