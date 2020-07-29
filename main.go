@@ -26,7 +26,10 @@ func main() {
 
 	//TODO: make this concurrent
 	for _, hash := range commitHashes {
-		runTest(command, hash)
+		err := runTest(command, hash)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	showResults(commitHashes)
@@ -58,12 +61,19 @@ func runTest(command, hash string) error {
 		return errors.Wrap(err, "failed to create build directory root")
 	}
 
-	setNote(hash, "RUNNING")
+	err = setNote(hash, "RUNNING")
+	if err != nil {
+		return err
+	}
 
 	commitDir := path.Join(root, hash)
 
-	os.RemoveAll(commitDir)
-	runExclusively(func() error {
+	err = os.RemoveAll(commitDir)
+	if err != nil {
+		return err
+	}
+
+	err = runExclusively(func() error {
 		cmd := exec.Command("git", "worktree", "add", "--force", "--detach", commitDir, hash)
 		err := cmd.Run()
 		if err != nil {
@@ -71,14 +81,23 @@ func runTest(command, hash string) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("cd %s && %s", commitDir, command))
 	err = cmd.Run()
 
 	if err == nil {
-		setNote(hash, "PASS")
+		err = setNote(hash, "PASS")
+		if err != nil {
+			return err
+		}
 	} else {
-		setNote(hash, "FAIL")
+		err = setNote(hash, "FAIL")
+		if err != nil {
+			return err
+		}
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
