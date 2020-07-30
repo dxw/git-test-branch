@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 )
 
@@ -24,13 +25,20 @@ func main() {
 
 	commitHashes := revList(commits)
 
-	//TODO: make this concurrent
+	pool := workerpool.New(5)
+
 	for _, hash := range commitHashes {
-		err := runTest(command, hash)
-		if err != nil {
-			log.Fatal(err)
-		}
+		// This line is necessary because otherwise `hash`'s contents change
+		hash := hash
+		pool.Submit(func() {
+			err := runTest(command, hash)
+			if err != nil {
+				log.Fatal(errors.Wrap(err, "failure in workerpool task"))
+			}
+		})
 	}
+
+	pool.StopWait()
 
 	showResults(commitHashes)
 }
