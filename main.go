@@ -39,7 +39,7 @@ func revList(commits string) []string {
 	cmd := exec.Command("git", "rev-list", commits)
 	output, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "revList"))
 	}
 
 	commitHashes := []string{}
@@ -58,31 +58,31 @@ func runTest(command, hash string) error {
 
 	err := os.MkdirAll(root, 0755)
 	if err != nil {
-		return errors.Wrap(err, "failed to create build directory root")
+		return errors.Wrap(err, "runTest: failed to create build directory root")
 	}
 
 	err = setNote(hash, "RUNNING")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "runTest: failed setting note")
 	}
 
 	commitDir := path.Join(root, hash)
 
 	err = os.RemoveAll(commitDir)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "runTest: failed removing commitDir")
 	}
 
 	err = runExclusively(func() error {
 		cmd := exec.Command("git", "worktree", "add", "--force", "--detach", commitDir, hash)
 		err := cmd.Run()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "runTest: failed running worktree add command")
 		}
 		return nil
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "runTest: failed running exclusively")
 	}
 
 	cmd := exec.Command("sh", "-c", fmt.Sprintf("cd %s && %s", commitDir, command))
@@ -91,19 +91,19 @@ func runTest(command, hash string) error {
 	if err == nil {
 		err = setNote(hash, "PASS")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "runTest: failed setting PASS note")
 		}
 	} else {
 		err = setNote(hash, "FAIL")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "runTest: failed setting FAIL note")
 		}
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
 	err = cmd.Run()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "runTest: failed running worktree remove command")
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func runExclusively(f func() error) error {
 	mutex.Lock()
 	err := f()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "runExclusively: f() returned non-nil error")
 	}
 	mutex.Unlock()
 	return nil
@@ -124,12 +124,12 @@ func setNote(hash, message string) error {
 		cmd := exec.Command("git", "notes", "--ref=refs/notes/git-test-branch", "add", "--force", fmt.Sprintf("--message=%s", message), hash)
 		err := cmd.Run()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "setNote: failed git command")
 		}
 		return nil
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "setNote: failed running exclusively")
 	}
 	return nil
 }
@@ -151,7 +151,7 @@ func gitGetOutput(command ...string) string {
 	cmd := exec.Command("git", command...)
 	output, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "gitGetOutput"))
 	}
 
 	return strings.TrimSpace(string(output))
@@ -161,7 +161,7 @@ func getRootDir() string {
 	cmd := exec.Command("git", "rev-parse", "--absolute-git-dir")
 	output, err := cmd.Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(errors.Wrap(err, "getRootDir"))
 	}
 
 	dir := strings.TrimSpace(string(output))
