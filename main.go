@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
@@ -38,9 +39,12 @@ func main() {
 		})
 	}
 
+	allCommandsFinished := make(chan bool, 1)
+	go showResults(commitHashes, allCommandsFinished)
+
 	pool.StopWait()
 
-	showResults(commitHashes)
+	allCommandsFinished <- true
 }
 
 func revList(commits string) []string {
@@ -125,14 +129,31 @@ func runExclusively(f func() error) error {
 	return nil
 }
 
-func showResults(hashes []string) {
+func showResults(hashes []string, allCommandsFinished <-chan bool) {
+	ticker := time.Tick(1)
+
+	for {
+		select {
+		case <-allCommandsFinished:
+			return
+		case <-ticker:
+			results := getResults(hashes)
+			fmt.Println(results)
+		}
+	}
+}
+
+func getResults(hashes []string) string {
+	output := ""
 	for _, hash := range hashes {
 		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
 		outputResult := getTestResult(hash)
 		outputSubject := gitGetOutput("log", "-1", "--format=%s", hash)
 
-		fmt.Printf("%s [%s] %s\n", outputHash, outputResult, outputSubject)
+		output += fmt.Sprintf("%s [%s] %s\n", outputHash, outputResult, outputSubject)
 	}
+
+	return output
 }
 
 func gitGetOutput(command ...string) string {
