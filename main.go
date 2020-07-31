@@ -58,7 +58,14 @@ func revList(commits string) []string {
 		commitHashes = append(commitHashes, s)
 	}
 
-	return commitHashes
+	// Put hashes in graph-order from "oldest" ancestor to "youngest" descendent
+	// i.e. Reverse the slice
+	commitHashesReversed := []string{}
+	for i := len(commitHashes) - 1; i >= 0; i-- {
+		commitHashesReversed = append(commitHashesReversed, commitHashes[i])
+	}
+
+	return commitHashesReversed
 }
 
 func runTest(command, hash string) error {
