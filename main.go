@@ -14,7 +14,6 @@ import (
 )
 
 var mutex sync.Mutex
-var testStatus map[string]string
 
 func main() {
 	if len(os.Args) < 3 {
@@ -117,18 +116,6 @@ func runExclusively(f func() error) error {
 	}
 	mutex.Unlock()
 	return nil
-}
-
-func setTestStatus(hash, message string) {
-	if testStatus == nil {
-		testStatus = map[string]string{}
-	}
-
-	testStatus[hash] = message
-}
-
-func getTestStatus(hash string) string {
-	return testStatus[hash]
 }
 
 func showResults(hashes []string) {
