@@ -1,0 +1,38 @@
+name: Tests
+
+on: pull_request
+
+jobs:
+  test:
+    name: go test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - uses: actions/setup-go@v2
+    - run: go get -d
+    - run: go build
+    - run: go test
+  govet:
+    name: go vet
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - uses: actions/setup-go@v2
+    - run: go get -d
+    - run: go vet
+  errcheck:
+    name: errcheck
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - uses: actions/setup-go@v2
+    - run: go get -d
+    - run: go get -u github.com/kisielk/errcheck
+    - run: $(go env GOPATH)/bin/errcheck
+  golint:
+    name: golint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - uses: actions/setup-go@v2
+    - uses: Jerome1337/golint-action@v1.0.2
