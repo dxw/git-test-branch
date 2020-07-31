@@ -14,6 +14,7 @@ import (
 )
 
 var mutex sync.Mutex
+var testStatus map[string]string
 
 func main() {
 	if len(os.Args) < 3 {
@@ -69,10 +70,7 @@ func runTest(command, hash string) error {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
 	}
 
-	err = setTestStatus(hash, "RUNNING")
-	if err != nil {
-		return errors.Wrap(err, "runTest: failed setting note")
-	}
+	setTestStatus(hash, "RUNNING")
 
 	commitDir := path.Join(root, hash)
 
@@ -97,15 +95,9 @@ func runTest(command, hash string) error {
 	err = cmd.Run()
 
 	if err == nil {
-		err = setTestStatus(hash, "PASS")
-		if err != nil {
-			return errors.Wrap(err, "runTest: failed setting PASS note")
-		}
+		setTestStatus(hash, "PASS")
 	} else {
-		err = setTestStatus(hash, "FAIL")
-		if err != nil {
-			return errors.Wrap(err, "runTest: failed setting FAIL note")
-		}
+		setTestStatus(hash, "FAIL")
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
@@ -127,23 +119,16 @@ func runExclusively(f func() error) error {
 	return nil
 }
 
-func setTestStatus(hash, message string) error {
-	err := runExclusively(func() error {
-		cmd := exec.Command("git", "notes", "--ref=refs/notes/git-test-branch", "add", "--force", fmt.Sprintf("--message=%s", message), hash)
-		err := cmd.Run()
-		if err != nil {
-			return errors.Wrap(err, "setTestStatus: failed git command")
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Wrap(err, "setTestStatus: failed running exclusively")
+func setTestStatus(hash, message string) {
+	if testStatus == nil {
+		testStatus = map[string]string{}
 	}
-	return nil
+
+	testStatus[hash] = message
 }
 
 func getTestStatus(hash string) string {
-	return gitGetOutput("notes", "--ref=refs/notes/git-test-branch", "show", hash)
+	return testStatus[hash]
 }
 
 func showResults(hashes []string) {
