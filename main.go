@@ -76,10 +76,7 @@ func runTest(command, hash string) error {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
 	}
 
-	err = setNote(hash, "RUNNING")
-	if err != nil {
-		return errors.Wrap(err, "runTest: failed setting note")
-	}
+	setTestStatus(hash, "RUNNING")
 
 	commitDir := path.Join(root, hash)
 
@@ -104,15 +101,9 @@ func runTest(command, hash string) error {
 	err = cmd.Run()
 
 	if err == nil {
-		err = setNote(hash, "PASS")
-		if err != nil {
-			return errors.Wrap(err, "runTest: failed setting PASS note")
-		}
+		setTestStatus(hash, "PASS")
 	} else {
-		err = setNote(hash, "FAIL")
-		if err != nil {
-			return errors.Wrap(err, "runTest: failed setting FAIL note")
-		}
+		setTestStatus(hash, "FAIL")
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
@@ -134,25 +125,10 @@ func runExclusively(f func() error) error {
 	return nil
 }
 
-func setNote(hash, message string) error {
-	err := runExclusively(func() error {
-		cmd := exec.Command("git", "notes", "--ref=refs/notes/git-test-branch", "add", "--force", fmt.Sprintf("--message=%s", message), hash)
-		err := cmd.Run()
-		if err != nil {
-			return errors.Wrap(err, "setNote: failed git command")
-		}
-		return nil
-	})
-	if err != nil {
-		return errors.Wrap(err, "setNote: failed running exclusively")
-	}
-	return nil
-}
-
 func showResults(hashes []string) {
 	for _, hash := range hashes {
 		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
-		outputResult := gitGetOutput("notes", "--ref=refs/notes/git-test-branch", "show", hash)
+		outputResult := getTestStatus(hash)
 		if outputResult == "" {
 			outputResult = "WAITING"
 		}
