@@ -142,10 +142,14 @@ func setNote(hash, message string) error {
 	return nil
 }
 
+func getNote(hash string) string {
+	return gitGetOutput("notes", "--ref=refs/notes/git-test-branch", "show", hash)
+}
+
 func showResults(hashes []string) {
 	for _, hash := range hashes {
 		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
-		outputResult := gitGetOutput("notes", "--ref=refs/notes/git-test-branch", "show", hash)
+		outputResult := getNote(hash)
 		if outputResult == "" {
 			outputResult = "WAITING"
 		}
