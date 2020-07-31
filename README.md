@@ -22,7 +22,7 @@ If you're on a branch with multiple commits, you might like to know that every c
 git test-branch origin/main..@ 'composer install && vendor/bin/peridot spec'
 ```
 
-This will run several tests (not concurrently at this very moment), and then print the pass/fail status of those tests.
+This will run several tests concurrently (5 processes at once - not configurable yet), and then print the pass/fail status of those tests.
 
 Here's a trivial example:
 
