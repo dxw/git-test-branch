@@ -76,7 +76,7 @@ func runTest(command, hash string) error {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
 	}
 
-	setTestStatus(hash, testResultRunning)
+	setTestResult(hash, testResultRunning)
 
 	commitDir := path.Join(root, hash)
 
@@ -101,9 +101,9 @@ func runTest(command, hash string) error {
 	err = cmd.Run()
 
 	if err == nil {
-		setTestStatus(hash, testResultPass)
+		setTestResult(hash, testResultPass)
 	} else {
-		setTestStatus(hash, testResultFail)
+		setTestResult(hash, testResultFail)
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
@@ -128,7 +128,7 @@ func runExclusively(f func() error) error {
 func showResults(hashes []string) {
 	for _, hash := range hashes {
 		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
-		outputResult := getTestStatus(hash)
+		outputResult := getTestResult(hash)
 		outputSubject := gitGetOutput("log", "-1", "--format=%s", hash)
 
 		fmt.Printf("%s [%s] %s\n", outputHash, outputResult, outputSubject)

@@ -29,18 +29,18 @@ func (r testResult) String() string {
 	panic(errors.New("unknown result type"))
 }
 
-var testStatus map[string]testResult
+var testResults map[string]testResult
 
-func setTestStatus(hash string, message testResult) {
-	if testStatus == nil {
-		testStatus = map[string]testResult{}
+func setTestResult(hash string, message testResult) {
+	if testResults == nil {
+		testResults = map[string]testResult{}
 	}
 
-	testStatus[hash] = message
+	testResults[hash] = message
 }
 
-func getTestStatus(hash string) testResult {
-	result, ok := testStatus[hash]
+func getTestResult(hash string) testResult {
+	result, ok := testResults[hash]
 	if ok {
 		return result
 	}
