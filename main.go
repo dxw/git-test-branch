@@ -20,18 +20,19 @@ func main() {
 		log.Fatal("Usage: git test-branch main..@ 'command-to-run'")
 	}
 
-	commits := os.Args[1]
+	commitSpecification := os.Args[1]
 	command := os.Args[2]
 
-	commitHashes := revList(commits)
+	commits := getCommits(commitSpecification)
+	results := make(chan testResult, 500) // TODO
 
 	pool := workerpool.New(5)
 
-	for _, hash := range commitHashes {
-		// This line is necessary because otherwise `hash`'s contents change
-		hash := hash
+	for _, commit := range commits {
+		// This line is necessary because otherwise `commit`'s contents change
+		commit := commit
 		pool.Submit(func() {
-			err := runTest(command, hash)
+			err := runTest(command, commit, results)
 			if err != nil {
 				log.Fatal(errors.Wrap(err, "failure in workerpool task"))
 			}
@@ -40,35 +41,11 @@ func main() {
 
 	pool.StopWait()
 
-	showResults(commitHashes)
+	close(results)
+	showResults(commits, results)
 }
 
-func revList(commits string) []string {
-	cmd := exec.Command("git", "rev-list", commits)
-	output, err := cmd.Output()
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "revList"))
-	}
-
-	commitHashes := []string{}
-	for _, s := range strings.Split(string(output), "\n") {
-		if s == "" {
-			continue
-		}
-		commitHashes = append(commitHashes, s)
-	}
-
-	// Put hashes in graph-order from "oldest" ancestor to "youngest" descendent
-	// i.e. Reverse the slice
-	commitHashesReversed := []string{}
-	for i := len(commitHashes) - 1; i >= 0; i-- {
-		commitHashesReversed = append(commitHashesReversed, commitHashes[i])
-	}
-
-	return commitHashesReversed
-}
-
-func runTest(command, hash string) error {
+func runTest(command string, commit commit, results chan<- testResult) error {
 	root := getRootDir()
 
 	err := os.MkdirAll(root, 0755)
@@ -76,9 +53,9 @@ func runTest(command, hash string) error {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
 	}
 
-	setTestResult(hash, testResultRunning)
+	results <- testResult{commit: commit, status: testStatusRunning}
 
-	commitDir := path.Join(root, hash)
+	commitDir := path.Join(root, commit.hash)
 
 	err = os.RemoveAll(commitDir)
 	if err != nil {
@@ -86,7 +63,7 @@ func runTest(command, hash string) error {
 	}
 
 	err = runExclusively(func() error {
-		cmd := exec.Command("git", "worktree", "add", "--force", "--detach", commitDir, hash)
+		cmd := exec.Command("git", "worktree", "add", "--force", "--detach", commitDir, commit.hash)
 		err := cmd.Run()
 		if err != nil {
 			return errors.Wrap(err, "runTest: failed running worktree add command")
@@ -101,9 +78,9 @@ func runTest(command, hash string) error {
 	err = cmd.Run()
 
 	if err == nil {
-		setTestResult(hash, testResultPass)
+		results <- testResult{commit: commit, status: testStatusPass}
 	} else {
-		setTestResult(hash, testResultFail)
+		results <- testResult{commit: commit, status: testStatusFail}
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
@@ -125,13 +102,27 @@ func runExclusively(f func() error) error {
 	return nil
 }
 
-func showResults(hashes []string) {
-	for _, hash := range hashes {
-		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
-		outputResult := getTestResult(hash)
-		outputSubject := gitGetOutput("log", "-1", "--format=%s", hash)
+func showResults(commits []commit, results <-chan testResult) {
+	finalResults := []testResult{}
 
-		fmt.Printf("%s [%s] %s\n", outputHash, outputResult, outputSubject)
+	// Populate finalResults with some placeholder values
+	for _, commit := range commits {
+		finalResults = append(finalResults, testResult{commit: commit, status: testStatusWaiting})
+	}
+
+	// Update finalResults with the correct values as they come in from the channel
+	// TODO: this doesn't have a great runtime
+	for thisResult := range results {
+		for i := range finalResults {
+			if thisResult.commit.hash == finalResults[i].commit.hash {
+				finalResults[i].status = thisResult.status
+			}
+		}
+	}
+
+	// Display finalResults
+	for _, result := range finalResults {
+		fmt.Printf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
 	}
 }
 

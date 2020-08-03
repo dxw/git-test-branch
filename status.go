@@ -6,43 +6,25 @@ import (
 	"github.com/fatih/color"
 )
 
-type testResult int
+type testStatus int
 
 const (
-	testResultPass = iota
-	testResultFail
-	testResultRunning
-	testResultWaiting
+	testStatusPass = iota
+	testStatusFail
+	testStatusRunning
+	testStatusWaiting
 )
 
-func (r testResult) String() string {
+func (r testStatus) String() string {
 	switch r {
-	case testResultPass:
+	case testStatusPass:
 		return color.New(color.FgBlack, color.BgGreen).Sprint("PASS")
-	case testResultFail:
+	case testStatusFail:
 		return color.New(color.FgRed, color.BgBlack).Sprint("FAIL")
-	case testResultRunning:
+	case testStatusRunning:
 		return color.New(color.FgBlue, color.BgBlack).Sprint("RUNNING")
-	case testResultWaiting:
+	case testStatusWaiting:
 		return color.New(color.FgBlue, color.BgBlack).Sprint("WAITING")
 	}
 	panic(errors.New("unknown result type"))
-}
-
-var testResults map[string]testResult
-
-func setTestResult(hash string, message testResult) {
-	if testResults == nil {
-		testResults = map[string]testResult{}
-	}
-
-	testResults[hash] = message
-}
-
-func getTestResult(hash string) testResult {
-	result, ok := testResults[hash]
-	if ok {
-		return result
-	}
-	return testResultWaiting
 }
