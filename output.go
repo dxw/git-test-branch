@@ -4,6 +4,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -18,20 +19,15 @@ func gitGetOutput(command ...string) string {
 	return strings.TrimSpace(string(output))
 }
 
-var gitGetOutputCache map[string]string
+var gitGetOutputCache sync.Map
 
 func gitGetOutputCached(command ...string) string {
-	if gitGetOutputCache == nil {
-		gitGetOutputCache = map[string]string{}
-	}
-
 	joined := strings.Join(command, " ")
-	output, ok := gitGetOutputCache[joined]
-	if ok {
-		return output
+	output, ok := gitGetOutputCache.Load(joined)
+	if !ok {
+		output = gitGetOutput(command...)
+		gitGetOutputCache.Store(joined, output)
 	}
 
-	output = gitGetOutput(command...)
-	gitGetOutputCache[joined] = output
-	return output
+	return output.(string)
 }
