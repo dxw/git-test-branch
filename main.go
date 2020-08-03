@@ -133,6 +133,8 @@ func runExclusively(f func() error) error {
 }
 
 func showResults(hashes []string, allCommandsFinished <-chan bool, commandFinished <-chan bool) {
+	fmt.Println(getResults(hashes))
+
 	for {
 		select {
 		case <-allCommandsFinished:
