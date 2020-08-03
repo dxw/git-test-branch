@@ -30,6 +30,15 @@ func main() {
 
 	pool := workerpool.New(5)
 
+	// Process failures
+	failures := make(chan bool, 10)
+	aCommandFailed := false
+	go func() {
+		for <-failures {
+			aCommandFailed = true
+		}
+	}()
+
 	// Show the results before we do anything, and update them regularly
 	go showResults(commits, results)
 
@@ -37,7 +46,7 @@ func main() {
 		// This line is necessary because otherwise `commit`'s contents change
 		commit := commit
 		pool.Submit(func() {
-			err := runTest(rootDir, command, commit, results)
+			err := runTest(rootDir, command, commit, results, failures)
 			if err != nil {
 				log.Fatal(errors.Wrap(err, "failure in workerpool task"))
 			}
@@ -47,9 +56,14 @@ func main() {
 	pool.StopWait()
 
 	close(results)
+	close(failures)
+
+	if aCommandFailed {
+		os.Exit(1)
+	}
 }
 
-func runTest(root string, command string, commit commit, results chan<- testResult) error {
+func runTest(root string, command string, commit commit, results chan<- testResult, failures chan<- bool) error {
 	err := os.MkdirAll(root, 0755)
 	if err != nil {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
@@ -83,6 +97,7 @@ func runTest(root string, command string, commit commit, results chan<- testResu
 		results <- testResult{commit: commit, status: testStatusPass}
 	} else {
 		results <- testResult{commit: commit, status: testStatusFail}
+		failures <- true
 	}
 
 	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
