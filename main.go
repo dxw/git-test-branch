@@ -138,6 +138,7 @@ func showResults(hashes []string, allCommandsFinished <-chan bool, commandFinish
 	for {
 		select {
 		case <-allCommandsFinished:
+			fmt.Println(getResults(hashes))
 			return
 		case <-commandFinished:
 			fmt.Println(getResults(hashes))
