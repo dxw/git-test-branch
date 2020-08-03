@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/fatih/color"
 )
@@ -29,20 +30,16 @@ func (r testResult) String() string {
 	panic(errors.New("unknown result type"))
 }
 
-var testResults map[string]testResult
+var testResults sync.Map
 
 func setTestResult(hash string, message testResult) {
-	if testResults == nil {
-		testResults = map[string]testResult{}
-	}
-
-	testResults[hash] = message
+	testResults.Store(hash, message)
 }
 
 func getTestResult(hash string) testResult {
-	result, ok := testResults[hash]
+	result, ok := testResults.Load(hash)
 	if ok {
-		return result
+		return result.(testResult)
 	}
 	return testResultWaiting
 }
