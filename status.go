@@ -1,6 +1,10 @@
 package main
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/fatih/color"
+)
 
 type testResult int
 
@@ -14,13 +18,13 @@ const (
 func (r testResult) String() string {
 	switch r {
 	case testResultPass:
-		return "PASS"
+		return color.New(color.FgBlack, color.BgGreen).Sprint("PASS")
 	case testResultFail:
-		return "FAIL"
+		return color.New(color.FgRed, color.BgBlack).Sprint("FAIL")
 	case testResultRunning:
-		return "RUNNING"
+		return color.New(color.FgBlue, color.BgBlack).Sprint("RUNNING")
 	case testResultWaiting:
-		return "WAITING"
+		return color.New(color.FgBlue, color.BgBlack).Sprint("WAITING")
 	}
 	panic(errors.New("unknown result type"))
 }
