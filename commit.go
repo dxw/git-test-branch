@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 )
 
@@ -27,11 +28,17 @@ func getCommits(commits string) []commit {
 	// i.e. Reverse the slice
 	hashes := reverse(revList(commits))
 
-	output := []commit{}
-	// TODO: parallelise this
-	for _, hash := range hashes {
-		output = append(output, getCommit(hash))
+	pool := workerpool.New(5)
+
+	output := make([]commit, len(hashes))
+	for i := range hashes {
+		i := i
+		pool.Submit(func() {
+			output[i] = getCommit(hashes[i])
+		})
 	}
+
+	pool.StopWait()
 
 	return output
 }
