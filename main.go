@@ -133,13 +133,7 @@ func gitGetOutput(command ...string) string {
 }
 
 func getRootDir() string {
-	cmd := exec.Command("git", "rev-parse", "--absolute-git-dir")
-	output, err := cmd.Output()
-	if err != nil {
-		log.Fatal(errors.Wrap(err, "getRootDir"))
-	}
-
-	dir := strings.TrimSpace(string(output))
+	dir := gitGetOutput("rev-parse", "--absolute-git-dir")
 
 	return path.Join(dir, "git-test-branch")
 }
