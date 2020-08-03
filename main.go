@@ -148,9 +148,9 @@ func showResults(hashes []string, allCommandsFinished <-chan bool, commandFinish
 func getResults(hashes []string) string {
 	output := ""
 	for _, hash := range hashes {
-		outputHash := gitGetOutput("log", "-1", "--format=%h", hash)
+		outputHash := gitGetOutputCached("log", "-1", "--format=%h", hash)
 		outputResult := getTestResult(hash)
-		outputSubject := gitGetOutput("log", "-1", "--format=%s", hash)
+		outputSubject := gitGetOutputCached("log", "-1", "--format=%s", hash)
 
 		output += fmt.Sprintf("%s [%s] %s\n", outputHash, outputResult, outputSubject)
 	}
@@ -166,6 +166,24 @@ func gitGetOutput(command ...string) string {
 	}
 
 	return strings.TrimSpace(string(output))
+}
+
+var gitGetOutputCache map[string]string
+
+func gitGetOutputCached(command ...string) string {
+	if gitGetOutputCache == nil {
+		gitGetOutputCache = map[string]string{}
+	}
+
+	joined := strings.Join(command, " ")
+	output, ok := gitGetOutputCache[joined]
+	if ok {
+		return output
+	}
+
+	output = gitGetOutput(command...)
+	gitGetOutputCache[joined] = output
+	return output
 }
 
 func getRootDir() string {
