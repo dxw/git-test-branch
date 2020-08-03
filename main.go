@@ -8,7 +8,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
@@ -27,11 +26,15 @@ func main() {
 	commitHashes := revList(commits)
 
 	pool := workerpool.New(5)
+	commandFinished := make(chan bool, 5)
 
 	for _, hash := range commitHashes {
 		// This line is necessary because otherwise `hash`'s contents change
 		hash := hash
 		pool.Submit(func() {
+			defer func() {
+				commandFinished <- true
+			}()
 			err := runTest(command, hash)
 			if err != nil {
 				log.Fatal(errors.Wrap(err, "failure in workerpool task"))
@@ -40,7 +43,7 @@ func main() {
 	}
 
 	allCommandsFinished := make(chan bool, 1)
-	go showResults(commitHashes, allCommandsFinished)
+	go showResults(commitHashes, allCommandsFinished, commandFinished)
 
 	pool.StopWait()
 
@@ -129,16 +132,13 @@ func runExclusively(f func() error) error {
 	return nil
 }
 
-func showResults(hashes []string, allCommandsFinished <-chan bool) {
-	ticker := time.Tick(1)
-
+func showResults(hashes []string, allCommandsFinished <-chan bool, commandFinished <-chan bool) {
 	for {
 		select {
 		case <-allCommandsFinished:
 			return
-		case <-ticker:
-			results := getResults(hashes)
-			fmt.Println(results)
+		case <-commandFinished:
+			fmt.Println(getResults(hashes))
 		}
 	}
 }
