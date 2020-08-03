@@ -103,25 +103,21 @@ func runExclusively(f func() error) error {
 }
 
 func showResults(commits []commit, results <-chan testResult) {
-	finalResults := []testResult{}
+	finalResults := map[string]testResult{}
 
 	// Populate finalResults with some placeholder values
 	for _, commit := range commits {
-		finalResults = append(finalResults, testResult{commit: commit, status: testStatusWaiting})
+		finalResults[commit.hash] = testResult{commit: commit, status: testStatusWaiting}
 	}
 
 	// Update finalResults with the correct values as they come in from the channel
-	// TODO: this doesn't have a great runtime
 	for thisResult := range results {
-		for i := range finalResults {
-			if thisResult.commit.hash == finalResults[i].commit.hash {
-				finalResults[i].status = thisResult.status
-			}
-		}
+		finalResults[thisResult.commit.hash] = thisResult
 	}
 
 	// Display finalResults
-	for _, result := range finalResults {
+	for _, commit := range commits {
+		result := finalResults[commit.hash]
 		fmt.Printf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
 	}
 }
