@@ -22,6 +22,7 @@ func main() {
 
 	commitSpecification := os.Args[1]
 	command := os.Args[2]
+	rootDir := getRootDir()
 
 	commits := getCommits(commitSpecification)
 	// This only needs a small buffer because showResults will be reading it constantly
@@ -36,7 +37,7 @@ func main() {
 		// This line is necessary because otherwise `commit`'s contents change
 		commit := commit
 		pool.Submit(func() {
-			err := runTest(command, commit, results)
+			err := runTest(rootDir, command, commit, results)
 			if err != nil {
 				log.Fatal(errors.Wrap(err, "failure in workerpool task"))
 			}
@@ -48,9 +49,7 @@ func main() {
 	close(results)
 }
 
-func runTest(command string, commit commit, results chan<- testResult) error {
-	root := getRootDir()
-
+func runTest(root string, command string, commit commit, results chan<- testResult) error {
 	err := os.MkdirAll(root, 0755)
 	if err != nil {
 		return errors.Wrap(err, "runTest: failed to create build directory root")
