@@ -123,12 +123,12 @@ func runTest(command, hash string) error {
 }
 
 func runExclusively(f func() error) error {
+	defer mutex.Unlock()
 	mutex.Lock()
 	err := f()
 	if err != nil {
 		return errors.Wrap(err, "runExclusively: f() returned non-nil error")
 	}
-	mutex.Unlock()
 	return nil
 }
 
