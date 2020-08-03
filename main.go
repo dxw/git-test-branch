@@ -24,9 +24,13 @@ func main() {
 	command := os.Args[2]
 
 	commits := getCommits(commitSpecification)
-	results := make(chan testResult, 500) // TODO
+	// This only needs a small buffer because showResults will be reading it constantly
+	results := make(chan testResult, 10)
 
 	pool := workerpool.New(5)
+
+	// Show the results before we do anything, and update them regularly
+	go showResults(commits, results)
 
 	for _, commit := range commits {
 		// This line is necessary because otherwise `commit`'s contents change
@@ -42,7 +46,6 @@ func main() {
 	pool.StopWait()
 
 	close(results)
-	showResults(commits, results)
 }
 
 func runTest(command string, commit commit, results chan<- testResult) error {
@@ -111,15 +114,30 @@ func showResults(commits []commit, results <-chan testResult) {
 	}
 
 	// Update finalResults with the correct values as they come in from the channel
-	for thisResult := range results {
-		finalResults[thisResult.commit.hash] = thisResult
-	}
+	// These get updated continuously
+	update := make(chan bool, 1)
+	go func() {
+		for thisResult := range results {
+			finalResults[thisResult.commit.hash] = thisResult
+			update <- true
+		}
+		// When results is closed, close update as well
+		close(update)
+	}()
 
-	// Display finalResults
+	// Display finalResults immediately, then whenever they're updated
+	showResultsOnce(commits, finalResults)
+	for range update {
+		showResultsOnce(commits, finalResults)
+	}
+}
+
+func showResultsOnce(commits []commit, finalResults map[string]testResult) {
 	for _, commit := range commits {
 		result := finalResults[commit.hash]
 		fmt.Printf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
 	}
+	fmt.Println()
 }
 
 func gitGetOutput(command ...string) string {
