@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+
 	"os/exec"
 	"path"
 	"strings"
@@ -100,10 +101,16 @@ func runTest(root string, command string, commit commit, results chan<- testResu
 		failures <- true
 	}
 
-	cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
-	err = cmd.Run()
+	err = runExclusively(func() error {
+		cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
+		err = cmd.Run()
+		if err != nil {
+			return errors.Wrap(err, "runTest: failed running worktree remove command")
+		}
+		return nil
+	})
 	if err != nil {
-		return errors.Wrap(err, "runTest: failed running worktree remove command")
+		return errors.Wrap(err, "runTest: failed running exclusively")
 	}
 
 	return nil
