@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dxw/git-test-branch/screenwriter"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 )
@@ -146,19 +147,25 @@ func showResults(commits []commit, results <-chan testResult) {
 		close(update)
 	}()
 
+	w := screenwriter.New(os.Stdout)
+
 	// Display finalResults immediately, then whenever they're updated
-	showResultsOnce(commits, finalResults)
+	showResultsOnce(w, commits, finalResults)
 	for range update {
-		showResultsOnce(commits, finalResults)
+		showResultsOnce(w, commits, finalResults)
 	}
 }
 
-func showResultsOnce(commits []commit, finalResults map[string]testResult) {
+func showResultsOnce(w *screenwriter.ScreenWriter, commits []commit, finalResults map[string]testResult) {
+	text := ""
 	for _, commit := range commits {
 		result := finalResults[commit.hash]
-		fmt.Printf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
+		text += fmt.Sprintf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
 	}
-	fmt.Println()
+	err := w.Display(text)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func gitGetOutput(command ...string) string {
