@@ -24,9 +24,6 @@ func (w *ScreenWriter) clearPrevious() error {
 		return nil
 	}
 
-	// Get number of lines in previous
-	lines := strings.Count(w.previous, "\n")
-
 	// Handle the final line
 	splitLines := strings.Split(w.previous, "\n")
 	finalLine := splitLines[len(splitLines)-1]
@@ -44,7 +41,7 @@ func (w *ScreenWriter) clearPrevious() error {
 	}
 
 	// Go up and clear n lines
-	for i := 0; i < lines; i++ {
+	for i := 0; i < len(splitLines)-1; i++ {
 		// Go up one line
 		_, err = w.writer.WriteString("\u001b[1A")
 		if err != nil {
