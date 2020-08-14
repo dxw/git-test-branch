@@ -5,10 +5,10 @@ import (
 	"strings"
 )
 
-// ScreenWriter allows writing to the screen and then overwriting that content.
+// ScreenWriter allows writing messages to the screen and then overwriting those messages.
 type ScreenWriter struct {
-	writer   io.StringWriter
-	previous string
+	writer          io.StringWriter
+	previousMessage string
 }
 
 // New creates a new ScreenWriter which is ready to be used.
@@ -19,11 +19,11 @@ func New(writer io.StringWriter) *ScreenWriter {
 }
 
 func (w *ScreenWriter) clearPrevious() error {
-	if w.previous == "" {
+	if w.previousMessage == "" {
 		return nil
 	}
 
-	lines := strings.Split(w.previous, "\n")
+	lines := strings.Split(w.previousMessage, "\n")
 
 	// Move the cursor to the start of the line
 	finalLine := lines[len(lines)-1]
@@ -56,15 +56,15 @@ func (w *ScreenWriter) clearPrevious() error {
 	return nil
 }
 
-// Display clears the previously printed content from the screen (if necessary), then writes the provided content to the screen.
-func (w *ScreenWriter) Display(s string) error {
+// Display clears the previously printed message from the screen (if necessary), then writes the provided message to the screen.
+func (w *ScreenWriter) Display(message string) error {
 	err := w.clearPrevious()
 	if err != nil {
 		return err
 	}
 
-	w.previous = s
+	w.previousMessage = message
 
-	_, err = w.writer.WriteString(s)
+	_, err = w.writer.WriteString(message)
 	return err
 }
