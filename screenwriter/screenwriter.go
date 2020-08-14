@@ -1,7 +1,6 @@
 package screenwriter
 
 import (
-	"fmt"
 	"io"
 	"strings"
 )
@@ -24,20 +23,18 @@ func (w *ScreenWriter) clearPrevious() error {
 		return nil
 	}
 
-	// Handle the final line
 	lines := strings.Split(w.previous, "\n")
+
+	// Move the cursor to the start of the line
 	finalLine := lines[len(lines)-1]
 	finalLineLength := len(finalLine)
-	// Move the cursor to the start of the line
-	// i.e. move the cursor to the left n times (where n is the length of the line)
-	_, err := w.writer.WriteString(fmt.Sprintf("\u001b[%dD", finalLineLength))
+	err := moveCursor(w.writer, directionLeft, finalLineLength)
 	if err != nil {
 		return err
 	}
 
-	// Clear entire line
-	// This is necessary if the last line has content (i.e. the string does not end with \n)
-	_, err = w.writer.WriteString("\u001b[2K")
+	// We need to clear the last line in case the string does not end with a "\n"
+	err = clearLine(w.writer)
 	if err != nil {
 		return err
 	}
@@ -45,12 +42,12 @@ func (w *ScreenWriter) clearPrevious() error {
 	// Go up and clear n lines
 	for i := 0; i < len(lines)-1; i++ {
 		// Go up one line
-		_, err = w.writer.WriteString("\u001b[1A")
+		err = moveCursor(w.writer, directionUp, 1)
 		if err != nil {
 			return err
 		}
 		// Clear entire line
-		_, err = w.writer.WriteString("\u001b[2K")
+		err = clearLine(w.writer)
 		if err != nil {
 			return err
 		}
