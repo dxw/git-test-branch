@@ -28,6 +28,8 @@ func (w *ScreenWriter) clearPrevious() error {
 	lines := strings.Split(w.previous, "\n")
 	finalLine := lines[len(lines)-1]
 	finalLineLength := len(finalLine)
+	// Move the cursor to the start of the line
+	// i.e. move the cursor to the left n times (where n is the length of the line)
 	_, err := w.writer.WriteString(fmt.Sprintf("\u001b[%dD", finalLineLength))
 	if err != nil {
 		return err
