@@ -25,8 +25,8 @@ func (w *ScreenWriter) clearPrevious() error {
 	}
 
 	// Handle the final line
-	splitLines := strings.Split(w.previous, "\n")
-	finalLine := splitLines[len(splitLines)-1]
+	lines := strings.Split(w.previous, "\n")
+	finalLine := lines[len(lines)-1]
 	finalLineLength := len(finalLine)
 	_, err := w.writer.WriteString(fmt.Sprintf("\u001b[%dD", finalLineLength))
 	if err != nil {
@@ -41,7 +41,7 @@ func (w *ScreenWriter) clearPrevious() error {
 	}
 
 	// Go up and clear n lines
-	for i := 0; i < len(splitLines)-1; i++ {
+	for i := 0; i < len(lines)-1; i++ {
 		// Go up one line
 		_, err = w.writer.WriteString("\u001b[1A")
 		if err != nil {
