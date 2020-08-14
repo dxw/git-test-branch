@@ -28,10 +28,9 @@ func (w *ScreenWriter) clearPrevious() error {
 	lines := strings.Count(w.previous, "\n")
 
 	// Handle the final line
-	finalLineLength := 0
 	splitLines := strings.Split(w.previous, "\n")
 	finalLine := splitLines[len(splitLines)-1]
-	finalLineLength = len(finalLine)
+	finalLineLength := len(finalLine)
 	_, err := w.writer.WriteString(fmt.Sprintf("\u001b[%dD", finalLineLength))
 	if err != nil {
 		return err
