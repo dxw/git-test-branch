@@ -13,17 +13,33 @@ import (
 	"github.com/dxw/git-test-branch/screenwriter"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
+	flag "github.com/spf13/pflag"
 )
 
 var mutex sync.Mutex
 
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatal("Usage: git test-branch main..@ 'command-to-run'")
+	flags := flag.NewFlagSet("git test-branch", flag.ContinueOnError)
+	flags.Usage = func() {
+		fmt.Printf("Usage: git test-branch main..@ 'command-to-run'\n\n")
+		fmt.Printf("Options:\n")
+		flags.PrintDefaults()
 	}
 
-	commitSpecification := os.Args[1]
-	command := os.Args[2]
+	err := flags.Parse(os.Args[1:])
+	if err == flag.ErrHelp {
+		// Do nothing
+	} else if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(flags.Args()) < 2 {
+		flags.Usage()
+		os.Exit(1)
+	}
+
+	commitSpecification := flags.Args()[0]
+	command := flags.Args()[1]
 	rootDir := getRootDir()
 
 	commits := getCommits(commitSpecification)
