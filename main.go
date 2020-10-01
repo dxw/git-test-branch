@@ -13,24 +13,47 @@ import (
 	"github.com/dxw/git-test-branch/screenwriter"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
+	flag "github.com/spf13/pflag"
 )
 
 var mutex sync.Mutex
+var debug bool
 
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatal("Usage: git test-branch main..@ 'command-to-run'")
+	flags := flag.NewFlagSet("git test-branch", flag.ContinueOnError)
+	flags.Usage = func() {
+		fmt.Printf("Usage: git test-branch main..@ 'command-to-run'\n\n")
+		fmt.Printf("Options:\n")
+		flags.PrintDefaults()
+	}
+	flags.BoolVar(&debug, "debug", false, "Run in debug mode (showing a lot of output).")
+
+	err := flags.Parse(os.Args[1:])
+	if err == flag.ErrHelp {
+		// Do nothing
+	} else if err != nil {
+		log.Fatal(err)
 	}
 
-	commitSpecification := os.Args[1]
-	command := os.Args[2]
+	if len(flags.Args()) < 2 {
+		flags.Usage()
+		os.Exit(1)
+	}
+
+	commitSpecification := flags.Args()[0]
+	command := flags.Args()[1]
 	rootDir := getRootDir()
 
 	commits := getCommits(commitSpecification)
 	// This only needs a small buffer because showResults will be reading it constantly
 	results := make(chan testResult, 10)
 
-	pool := workerpool.New(5)
+	poolSize := 5
+	if debug {
+		log.Println("main: Setting poolSize to 1 for debug mode")
+		poolSize = 1
+	}
+	pool := workerpool.New(poolSize)
 
 	// Process failures
 	failures := make(chan bool, 10)
@@ -65,6 +88,20 @@ func main() {
 	}
 }
 
+func runCommandSilent(path string, arg ...string) error {
+	cmd := exec.Command(path, arg...)
+	if debug {
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
+		log.Printf("runCommandSilent: Running command: %s %#v\n", cmd.Path, cmd.Args)
+	}
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "runCommandSilent")
+	}
+	return err
+}
+
 func runTest(root string, command string, commit commit, results chan<- testResult, failures chan<- bool) error {
 	err := os.MkdirAll(root, 0755)
 	if err != nil {
@@ -81,8 +118,7 @@ func runTest(root string, command string, commit commit, results chan<- testResu
 	}
 
 	err = runExclusively(func() error {
-		cmd := exec.Command("git", "worktree", "add", "--force", "--detach", commitDir, commit.hash)
-		err := cmd.Run()
+		err := runCommandSilent("git", "worktree", "add", "--force", "--detach", commitDir, commit.hash)
 		if err != nil {
 			return errors.Wrap(err, "runTest: failed running worktree add command")
 		}
@@ -92,9 +128,7 @@ func runTest(root string, command string, commit commit, results chan<- testResu
 		return errors.Wrap(err, "runTest: failed running exclusively")
 	}
 
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("cd %s && %s", commitDir, command))
-	err = cmd.Run()
-
+	err = runCommandSilent("sh", "-c", fmt.Sprintf("cd %s && %s", commitDir, command))
 	if err == nil {
 		results <- testResult{commit: commit, status: testStatusPass}
 	} else {
@@ -103,8 +137,7 @@ func runTest(root string, command string, commit commit, results chan<- testResu
 	}
 
 	err = runExclusively(func() error {
-		cmd = exec.Command("git", "worktree", "remove", "--force", commitDir)
-		err = cmd.Run()
+		err := runCommandSilent("git", "worktree", "remove", "--force", commitDir)
 		if err != nil {
 			return errors.Wrap(err, "runTest: failed running worktree remove command")
 		}
@@ -162,9 +195,14 @@ func showResultsOnce(w *screenwriter.ScreenWriter, commits []commit, finalResult
 		result := finalResults[commit.hash]
 		text += fmt.Sprintf("%s [%s] %s\n", result.commit.shortHash, result.status, result.commit.subject)
 	}
-	err := w.Display(text)
-	if err != nil {
-		log.Fatal(err)
+	if debug {
+		fmt.Print(text)
+		log.Println("showResultsOnce: Done")
+	} else {
+		err := w.Display(text)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
